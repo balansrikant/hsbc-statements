@@ -6,6 +6,7 @@ This solution and repository contains python objects for processing HSBC bank st
 1. Install tabula from this path: https://tabula.technology/
 2. (optional) Install/get subscription for YNAB: https://www.youneedabudget.com/
 3. Create folder path like so:
+    
     \root\
     \root\<year>\1-tabula-output\
     \root\<year>\2-cleaned\
