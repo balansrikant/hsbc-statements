@@ -6,7 +6,7 @@
 
 # Jupyter notebooks
 .ipynb_checkpoints
-.csv
+*.csv
 
 # Business Intelligence projects
 *.rdl.data
