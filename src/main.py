@@ -22,30 +22,64 @@ import csv
 import pathlib
 
 
-def get_file_paths(root_path: str, year_path: str):
-    """Get tabula file locations and balances file"""
+def transform_payee(param: str):
+    """
+    :helper function  
+    :transform payee into friendly name, category
+    """
 
-    if year_path != "":
-        tabula_path = os.path.join(root_path, 'tabula-output', year_path)
+    with open('/static/payee_mapping.csv') as f:
+        mapping = [{k: str(v) for k, v in row.items()}
+                   for row in csv.DictReader(f, skipinitialspace=True)]
+
+    for search_string in mapping:
+        if search_string['payee'] in param.lower():
+            repl = search_string['repl']
+            cat = search_string['category']
+
+    return repl, cat
+
+
+def transform_floats(param: str) -> float:
+    """
+    :helper function
+    :transform float contained as string into float
+    """
+    param.replace(',', '')
+    if param == '.':
+        param = 0.0
+    if param == NaN:
+        param = 0
+    param = float(param)
+
+    return param
+
+
+def get_file_paths(data_path: str):
+    """Get tabula files and balances file paths"""
+
+    if data_path != "":
+        tabula_csv_path = os.path.join(data_path, '1_tabula_csv')
+        balances_file = os.path.join(data_path, 'balances.csv')
     else:
-        tabula_path = os.path.join(root_path, 'tabula-output')
-    balances_file = os.path.join(root_path, 'Balances.csv')
+        src_path = pathlib.Path(__file__).parent.resolve()
+        tabula_csv_path = os.path.join(src_path, 'data', '1_tabula_csv')
+        balances_file = os.path.join(src_path, 'data', 'balances.csv')
 
-    tabula_files = [{'date': f[0:10],
-                     'filename': f,
-                     'path': os.path.join(dp, f)
-                     }
-                    for dp, dn, filenames in os.walk(tabula_path)
-                    for f in filenames
-                    if (os.path.splitext(f)[1] == '.csv')
-                    and ('_processed' not in os.path.splitext(f)[0])
-                    and ('_ynab' not in os.path.splitext(f)[0])]
+    tabula_csv_files = [{'date': f[0:10],
+                         'filename': f,
+                         'path': os.path.join(dp, f)}
+                        for dp, dn, filenames in os.walk(tabula_csv_path)
+                        for f in filenames
+                        if (os.path.splitext(f)[1] == '.csv')
+                        and ('_processed' not in os.path.splitext(f)[0])
+                        and ('_ynab' not in os.path.splitext(f)[0])]
 
-    return tabula_files, balances_file
+    return tabula_csv_files, balances_file
 
 
 def get_balances(balances_file: str) -> pd.DataFrame:
-    """Load balances from csv into dataframe
+    """load balances from csv into dataframe
 
     Keyword arguments:
     :balances_file - path of balances csv file
@@ -69,35 +103,8 @@ def get_balances(balances_file: str) -> pd.DataFrame:
     return df_balances
 
 
-def transform_floats(param: str) -> float:
-    """Convert string into float"""
-    param.replace(',', '')
-    if param == '.':
-        param = 0.0
-    if param == NaN:
-        param = 0
-    param = float(param)
-
-    return param
-
-
-def transform_payee(param: str):
-    """Convert payee into friendly name, category"""
-
-    with open('/static/payee_mapping.csv') as f:
-        mapping = [{k: str(v) for k, v in row.items()}
-                   for row in csv.DictReader(f, skipinitialspace=True)]
-
-    for search_string in mapping:
-        if search_string['payee'] in param.lower():
-            repl = search_string['repl']
-            cat = search_string['category']
-
-    return repl, cat
-
-
-def process_tabula_csv(file: dict) -> pd.DataFrame:
-    """Clean raw tabula dataframe"""
+def get_clean_csv(file: dict) -> pd.DataFrame:
+    """clean raw tabula dataframe"""
 
     date = file['date']
     cols = ['date', 'tr_type', 'payee', 'outflow', 'inflow', 'balance']
